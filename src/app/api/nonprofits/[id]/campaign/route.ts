@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
+import { buildNonprofitContext, type CampaignGenerationRequest } from "@/lib/campaign";
 import { generateCampaignVideoOutput } from "@/lib/campaign-generator";
 import { getMissionBriefById } from "@/lib/nonprofit-details";
-import type { CampaignGenerationRequest } from "@/lib/campaign";
 
 export async function POST(
   request: Request,
@@ -10,14 +10,17 @@ export async function POST(
   const { id } = await context.params;
   const body = (await request.json()) as Partial<CampaignGenerationRequest>;
   const resolvedNonProfit = await getMissionBriefById(id);
+  const nonprofitContext = resolvedNonProfit
+    ? buildNonprofitContext(resolvedNonProfit)
+    : body.nonprofitContext;
 
-  if (!resolvedNonProfit && !body.nonprofitContext) {
+  if (!nonprofitContext) {
     return NextResponse.json({ error: "Nonprofit context not found" }, { status: 404 });
   }
 
   const output = await generateCampaignVideoOutput({
     nonprofitId: id,
-    nonprofitContext: resolvedNonProfit ?? body.nonprofitContext!,
+    nonprofitContext,
     userPrompt: body.userPrompt,
   });
 
