@@ -12,6 +12,15 @@ interface PlacesResponse {
   results: PlaceResult[];
 }
 
+interface CharitySearchResult {
+  id: string;
+  name: string;
+  address: string;
+  city: string;
+  rating: number;
+  urgencyScore: number;
+}
+
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const city = searchParams.get("city");
@@ -24,7 +33,7 @@ export async function GET(request: NextRequest) {
   const apiKey = process.env.GOOGLE_PLACES_API_KEY;
 
   if (!apiKey) {
-    let mockData = getMockNonProfits(city);
+    const mockData = getMockNonProfits(city);
     return NextResponse.json(sortResults(mockData, sortBy));
   }
 
@@ -39,7 +48,7 @@ export async function GET(request: NextRequest) {
       throw new Error(`Places API error: ${data.status}`);
     }
 
-    let results = (data.results || []).map((place: PlaceResult) => ({
+    const results = (data.results || []).map((place: PlaceResult) => ({
       id: place.place_id,
       name: place.name,
       address: place.formatted_address,
@@ -55,7 +64,7 @@ export async function GET(request: NextRequest) {
   }
 }
 
-function sortResults(results: any[], sortBy: string) {
+function sortResults(results: CharitySearchResult[], sortBy: string) {
   if (sortBy === "rating") {
     return results.sort((a, b) => b.rating - a.rating);
   } else if (sortBy === "urgency") {
@@ -66,7 +75,7 @@ function sortResults(results: any[], sortBy: string) {
   return results;
 }
 
-function getMockNonProfits(city: string) {
+function getMockNonProfits(city: string): CharitySearchResult[] {
   return [
     {
       id: "mock-1",
