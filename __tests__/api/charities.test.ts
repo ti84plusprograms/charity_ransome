@@ -97,6 +97,7 @@ describe("GET /api/charities", () => {
         address: "123 Main St, Austin, TX",
         city: "Austin",
         rating: 4.9,
+        urgencyScore: expect.any(Number),
       },
     ]);
     expect(fetchMock).toHaveBeenCalledTimes(1);

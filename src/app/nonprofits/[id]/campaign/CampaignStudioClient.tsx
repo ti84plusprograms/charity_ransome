@@ -9,18 +9,25 @@ import {
   getUrgencyLabel,
   type NonProfitProfile,
 } from "@/lib/nonprofits";
+import { generateMarketingReel, generateShameMeme } from "@/agents/editor";
 
 export function CampaignStudioClient({
   initialNonProfit,
 }: {
   initialNonProfit: NonProfitProfile;
 }) {
-  const { onboardingComplete, setSelectedCharity } = useSessionStore();
+  const { 
+    onboardingComplete, 
+    setSelectedCharity,
+    profileVideoUrl,
+    setShameMemeDataUrl
+  } = useSessionStore();
   const [prompt, setPrompt] = useState("");
   const [output, setOutput] = useState<CampaignVideoOutput | null>(null);
   const [status, setStatus] = useState<"idle" | "loading" | "error" | "done">("idle");
   const [error, setError] = useState<string | null>(null);
   const [progress, setProgress] = useState(0);
+  const [videoUrl, setVideoUrl] = useState<string | null>(null);
   const progressTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
@@ -58,6 +65,38 @@ export function CampaignStudioClient({
     ],
     [initialNonProfit],
   );
+
+  const handleGenerateMeme = async (result: CampaignVideoOutput) => {
+    if (!profileVideoUrl) return;
+    try {
+      const response = await fetch(profileVideoUrl);
+      const blob = await response.blob();
+      const roast = result.hookLine || "STILL NOT VOLUNTEERING";
+      const dataUrl = await generateShameMeme(blob, roast);
+      setShameMemeDataUrl(dataUrl);
+    } catch (err) {
+      console.error("Meme generation failed", err);
+    }
+  };
+
+  const generateVideo = async (result: CampaignVideoOutput) => {
+    if (!profileVideoUrl) return;
+    try {
+      const response = await fetch(profileVideoUrl);
+      const blob = await response.blob();
+      const url = await generateMarketingReel(blob, initialNonProfit.name, result.narrationScript);
+      setVideoUrl(url);
+    } catch (err) {
+      console.error("Video generation failed", err);
+    }
+  };
+
+  useEffect(() => {
+    if (status === "done" && output) {
+      void handleGenerateMeme(output);
+      void generateVideo(output);
+    }
+  }, [status, output]);
 
   const handleGenerate = async () => {
     setStatus("loading");
@@ -237,7 +276,7 @@ export function CampaignStudioClient({
                     disabled={status === "loading"}
                     className="inline-flex items-center justify-center rounded-2xl bg-[#ff9c1a] px-6 py-4 text-sm font-bold text-slate-950 transition hover:bg-[#ffac3b] disabled:cursor-not-allowed disabled:opacity-60"
                   >
-                    Generate 30sec video
+                    Generate campaign
                   </button>
                 </div>
 
@@ -306,13 +345,23 @@ export function CampaignStudioClient({
                   <div className="mt-5 flex min-h-[360px] flex-col items-center justify-center rounded-[30px] border border-dashed border-[#0d6f77]/20 bg-[#f7faf9] px-8 text-center">
                     <div className="h-12 w-12 animate-spin rounded-full border-4 border-[#37b7b0]/25 border-t-[#0d6f77]" />
                     <p className="mt-5 text-sm font-semibold text-slate-700">
-                      Building your 30-second campaign storyboard...
+                      Rendering your 30-second campaign video...
                     </p>
                     <p className="mt-2 max-w-xl text-sm leading-7 text-slate-500">
-                      The studio is combining nonprofit context, urgency, and your optional direction into a structured concept.
+                      The studio is looping your intake media and applying filters to match the AI-generated storyboard.
                     </p>
                   </div>
                 ) : null}
+
+                {videoUrl && status === "done" && (
+                  <div className="mt-5 overflow-hidden rounded-[30px] border border-slate-200">
+                     <video 
+                        src={videoUrl} 
+                        controls 
+                        className="aspect-[9/16] w-full max-h-[600px] object-cover bg-black"
+                     />
+                  </div>
+                )}
 
                 {!output && status !== "loading" ? (
                   <div className="mt-5 flex min-h-[360px] items-center justify-center rounded-[30px] border border-dashed border-[#0d6f77]/20 bg-[#f7faf9] px-8 text-center text-sm leading-7 text-slate-500">

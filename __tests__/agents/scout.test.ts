@@ -23,7 +23,7 @@ describe("scout agent", () => {
 
     const result = await fetchLocalNonProfits("Seattle");
     expect(result).toEqual(mockResults);
-    expect(fetchMock).toHaveBeenCalledWith("/api/charities?city=Seattle");
+    expect(fetchMock).toHaveBeenCalledWith("/api/charities?city=Seattle&sortBy=rating");
   });
 
   it("fetchLocalNonProfits throws when response is not ok", async () => {

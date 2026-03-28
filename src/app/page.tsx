@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useSessionStore } from "@/lib/state";
 import {
@@ -15,6 +15,11 @@ export default function HomePage() {
   const { onboardingComplete, userName, setSelectedCharity } = useSessionStore();
   const [sortBy, setSortBy] = useState<DirectorySortKey>("priority");
   const [searchQuery, setSearchQuery] = useState("");
+
+  useEffect(() => {
+    // Clear selected charity when we are on the directory page
+    setSelectedCharity(null);
+  }, [setSelectedCharity]);
 
   const filteredOrganizations = featuredNonProfits.filter((organization) => {
     const normalizedQuery = searchQuery.trim().toLowerCase();
