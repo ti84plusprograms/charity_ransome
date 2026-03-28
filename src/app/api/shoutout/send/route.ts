@@ -34,7 +34,7 @@ export async function POST(req: Request) {
     });
 
     if (data?.error) {
-      const status = typeof data.error.statusCode === "number" ? data.error.statusCode : 502;
+      const status = typeof (data.error as any).statusCode === "number" ? (data.error as any).statusCode : 502;
       return NextResponse.json({ success: false, error: data.error.message ?? "Failed to send email" }, { status });
     }
 
