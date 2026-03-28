@@ -9,7 +9,7 @@ type BoothState = "idle" | "consent" | "recording" | "processing" | "done";
 
 export default function BoothPage() {
   const router = useRouter();
-  const { userName, selectedCharity, setHeroShotUrl, setGeneratedAdUrl } = useSessionStore();
+  const { userName, selectedCharity, setHeroShotUrl } = useSessionStore();
   const [state, setState] = useState<BoothState>("idle");
   const [countdown, setCountdown] = useState(5);
   const [error, setError] = useState<string | null>(null);
@@ -50,7 +50,6 @@ export default function BoothPage() {
           userName: userName || "Anonymous Hero",
         });
         setHeroShotUrl(result.videoUrl);
-        setGeneratedAdUrl(result.videoUrl);
         setPreviewUrl(result.videoUrl);
         setState("done");
       } catch {
@@ -73,7 +72,7 @@ export default function BoothPage() {
         mediaRecorder.stop();
       }
     }, 1000);
-  }, [selectedCharity, userName, setHeroShotUrl, setGeneratedAdUrl]);
+  }, [selectedCharity, userName, setHeroShotUrl]);
 
   const startCamera = useCallback(async () => {
     try {
@@ -197,10 +196,10 @@ export default function BoothPage() {
             />
             <div className="flex gap-3">
               <button
-                onClick={() => router.push("/campaign")}
+                onClick={() => router.push("/")}
                 className="flex-1 bg-orange-600 hover:bg-orange-500 text-white font-bold py-3 rounded-lg"
               >
-                View Campaign →
+                Return Home →
               </button>
               <button
                 onClick={() => {
