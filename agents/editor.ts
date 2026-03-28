@@ -1,6 +1,3 @@
-import { FFmpeg } from '@ffmpeg/ffmpeg';
-import { fetchFile, toBlobURL } from '@ffmpeg/util';
-
 /**
  * WEAPON 1: THE INSTANT MEME (Canvas API)
  */
@@ -46,35 +43,3 @@ export async function generateShameMeme(videoBlob: Blob, roastCaption: string): 
   });
 }
 
-/**
- * WEAPON 2: THE UGC REEL ENGINE (FFmpeg.wasm)
- */
-export async function generateMarketingReel(
-  videoBlob: Blob,
-  _charityName: string,
-  _marketingScript: string
-): Promise<string> {
-  const ffmpeg = new FFmpeg();
-  const baseURL = "https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd";
-  await ffmpeg.load({
-    coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, "text/javascript"),
-    wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, "application/wasm"),
-  });
-  const inputFileName = 'input.webm';
-  const outputFileName = 'output.mp4';
-  await ffmpeg.writeFile(inputFileName, await fetchFile(videoBlob));
-  await ffmpeg.exec([
-    '-stream_loop', '5',
-    '-i', inputFileName,
-    '-t', '30',
-    '-vf', 'colorchannelmixer=.3:.4:.3:0:.3:.4:.3:0:.3:.4:.3, eq=contrast=1.2:brightness=-0.05',
-    '-c:v', 'libx264',
-    '-preset', 'ultrafast',
-    outputFileName
-  ]);
-  const data = await ffmpeg.readFile(outputFileName);
-  const outputBytes = data instanceof Uint8Array ? data : new Uint8Array();
-  const outputBuffer = new Uint8Array(outputBytes).buffer;
-  const blob = new Blob([outputBuffer], { type: 'video/mp4' });
-  return URL.createObjectURL(blob);
-}
