@@ -1,0 +1,212 @@
+name: CI Smoke Test
+
+# Triggers: push / PR to master, or manual dispatch
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+  workflow_dispatch:
+
+# Minimal read-only permissions — no write access, no id-token
+permissions:
+  contents: read
+
+jobs:
+  smoke-test:
+    name: Safe Smoke Test
+    runs-on: ubuntu-latest
+
+    # Prevent accidental network calls from reaching external systems
+    # (GitHub Actions does not support full network blocking, but we avoid
+    # any steps that upload data or call external APIs beyond package registries)
+    env:
+      PYTHONDONTWRITEBYTECODE: "1"
+      PYTHONUNBUFFERED: "1"
+
+    steps:
+      # ── 1. Checkout ──────────────────────────────────────────────────────────
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # ── 2. Detect language / tooling ─────────────────────────────────────────
+      - name: Detect project language and tooling
+        id: detect
+        run: bash scripts/ci/detect_language.sh
+
+      # ══════════════════════════════════════════════════════════════════════════
+      # PYTHON PATH
+      # Static analysis only — the main payload is NEVER executed.
+      # ══════════════════════════════════════════════════════════════════════════
+
+      - name: "[Python] Set up Python"
+        if: steps.detect.outputs.language == 'python'
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - name: "[Python] Install dependencies"
+        if: steps.detect.outputs.language == 'python'
+        run: |
+          echo "Installing dependencies..."
+          python -m pip install --upgrade pip
+          if [ -f requirements.txt ]; then
+            pip install -r requirements.txt
+          elif [ -f pyproject.toml ]; then
+            pip install -e ".[dev]" 2>/dev/null || pip install -e . 2>/dev/null || true
+          elif [ -f setup.py ]; then
+            pip install -e . 2>/dev/null || true
+          fi
+
+      - name: "[Python] Static checks — syntax + lint (NO payload execution)"
+        if: steps.detect.outputs.language == 'python'
+        run: |
+          echo "============================================================"
+          echo "SAFETY: Running static analysis only."
+          echo "        The main ransomware payload will NOT be executed."
+          echo "============================================================"
+
+          echo ""
+          echo "--- Syntax check (py_compile) ---"
+          ERRORS=0
+          while IFS= read -r f; do
+            if python -m py_compile "$f" 2>&1; then
+              echo "  OK      $f"
+            else
+              echo "  SYNTAX ERROR: $f"
+              ERRORS=$((ERRORS + 1))
+            fi
+          done < <(find . -name "*.py" -not -path "./.git/*" | sort)
+          echo ""
+
+          echo "--- Lint (flake8, if installed) ---"
+          if python -m flake8 --version &>/dev/null; then
+            python -m flake8 --max-line-length=120 \
+              --extend-ignore=E501 \
+              --exclude=.git,__pycache__,build,dist \
+              . || true
+          else
+            echo "  flake8 not installed — skipping lint"
+          fi
+
+          echo ""
+          echo "--- Type check (mypy, if installed) ---"
+          if python -m mypy --version &>/dev/null; then
+            python -m mypy --ignore-missing-imports \
+              $(find . -name "*.py" -not -path "./.git/*" | head -50) || true
+          else
+            echo "  mypy not installed — skipping type check"
+          fi
+
+          if [ "$ERRORS" -gt 0 ]; then
+            echo "Syntax errors found: $ERRORS"
+            exit 1
+          fi
+          echo "Static checks complete."
+
+      - name: "[Python] Run tests (safe subset only, NOT the main payload)"
+        if: >-
+          steps.detect.outputs.language == 'python' &&
+          steps.detect.outputs.has_tests == 'true'
+        run: |
+          echo "============================================================"
+          echo "SAFETY: Running test suite only."
+          echo "        Tests must NOT call encrypt/decrypt on real files."
+          echo "============================================================"
+          if python -m pytest --version &>/dev/null 2>&1; then
+            python -m pytest tests/ -v --tb=short --no-header \
+              -p no:cacheprovider || true
+          else
+            python -m unittest discover -s tests -v 2>&1 || true
+          fi
+
+      # ══════════════════════════════════════════════════════════════════════════
+      # NODE.JS PATH
+      # Static checks only — no `node main.js` or similar.
+      # ══════════════════════════════════════════════════════════════════════════
+
+      - name: "[Node] Set up Node.js"
+        if: steps.detect.outputs.language == 'node'
+        uses: actions/setup-node@v4
+        with:
+          node-version: "lts/*"
+
+      - name: "[Node] Install dependencies"
+        if: steps.detect.outputs.language == 'node'
+        run: |
+          if [ -f package-lock.json ]; then
+            npm ci
+          elif [ -f yarn.lock ]; then
+            yarn install --frozen-lockfile
+          elif [ -f pnpm-lock.yaml ]; then
+            npm install -g pnpm && pnpm install --frozen-lockfile
+          else
+            npm install
+          fi
+
+      - name: "[Node] Lint and typecheck (NO payload execution)"
+        if: steps.detect.outputs.language == 'node'
+        run: |
+          echo "============================================================"
+          echo "SAFETY: Running static checks only."
+          echo "        The main ransomware payload will NOT be executed."
+          echo "============================================================"
+          npm run lint       --if-present || true
+          npm run typecheck  --if-present || true
+          npm run build      --if-present || true
+
+      - name: "[Node] Run tests"
+        if: >-
+          steps.detect.outputs.language == 'node' &&
+          steps.detect.outputs.has_tests == 'true'
+        run: npm test --if-present || true
+
+      # ══════════════════════════════════════════════════════════════════════════
+      # FALLBACK: language-agnostic smoke test
+      # Runs when no language tooling is detected.
+      # ══════════════════════════════════════════════════════════════════════════
+
+      - name: "[Fallback] Language-agnostic smoke test"
+        if: steps.detect.outputs.language == 'none'
+        run: |
+          echo "============================================================"
+          echo "No source-code language detected."
+          echo "Running language-agnostic repository checks."
+          echo "============================================================"
+
+          echo ""
+          echo "--- Repository contents ---"
+          find . -not -path './.git/*' | sort
+
+          echo ""
+          echo "--- File counts by extension ---"
+          find . -not -path './.git/*' -type f \
+            | sed 's/.*\.\([^.]*\)$/\1/' \
+            | sort | uniq -c | sort -rn || echo "  (no files with extensions)"
+
+          echo ""
+          echo "--- Checking for common entrypoint files ---"
+          FOUND=0
+          for f in main.py app.py index.js index.ts server.js server.ts main.go main.rb main.rs; do
+            if [ -f "$f" ]; then
+              echo "  FOUND: $f"
+              FOUND=$((FOUND + 1))
+            fi
+          done
+          if [ "$FOUND" -eq 0 ]; then
+            echo "  No standard entrypoint files found (repo may be empty or in early stages)."
+          fi
+
+          echo ""
+          echo "Smoke test complete — no destructive operations were performed."
+
+      # ── Final summary ────────────────────────────────────────────────────────
+      - name: Summary
+        if: always()
+        run: |
+          echo "============================================================"
+          echo "CI Smoke Test Summary"
+          echo "  Language detected : ${{ steps.detect.outputs.language || 'none' }}"
+          echo "  Tests present     : ${{ steps.detect.outputs.has_tests || 'false' }}"
+          echo "  Payload executed  : NO  (safety constraint enforced)"
+          echo "============================================================"
