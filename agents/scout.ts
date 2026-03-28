@@ -1,3 +1,5 @@
+import type { NonProfitProfile } from "@/lib/nonprofits";
+
 export interface NonProfit {
   id: string;
   name: string;
@@ -20,8 +22,8 @@ export async function fetchLocalNonProfits(city: string, sortBy: string = "ratin
   return response.json();
 }
 
-export async function getNonProfitDetails(placeId: string): Promise<NonProfit> {
-  const response = await fetch(`/api/charities/${placeId}`);
+export async function getNonProfitDetails(id: string): Promise<NonProfitProfile> {
+  const response = await fetch(`/api/charities/${id}`);
   
   if (!response.ok) {
     throw new Error(`Failed to fetch non-profit details: ${response.statusText}`);

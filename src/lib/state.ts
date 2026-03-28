@@ -1,16 +1,5 @@
 import { create } from "zustand";
-
-export interface NonProfit {
-  id: string;
-  name: string;
-  address: string;
-  city: string;
-  rating?: number;
-  phoneNumber?: string;
-  website?: string;
-  description?: string;
-  urgencyScore?: number;
-}
+import type { NonProfitProfile } from "@/lib/nonprofits";
 
 export interface SessionState {
   ironyScore: number;
@@ -20,8 +9,8 @@ export interface SessionState {
   emergencyContactRelation: string;
   profileVideoUrl: string | null;
   onboardingComplete: boolean;
-  selectedCharity: NonProfit | null;
-  discoveredCharities: NonProfit[];
+  selectedCharity: NonProfitProfile | null;
+  discoveredCharities: NonProfitProfile[];
   isSearching: boolean;
   heroShotUrl: string | null;
   tabSwitchCount: number;
@@ -37,8 +26,8 @@ export interface SessionState {
     profileVideoUrl: string;
   }) => void;
   setOnboardingComplete: (complete: boolean) => void;
-  setSelectedCharity: (charity: NonProfit | null) => void;
-  setDiscoveredCharities: (charities: NonProfit[]) => void;
+  setSelectedCharity: (charity: NonProfitProfile | null) => void;
+  setDiscoveredCharities: (charities: NonProfitProfile[]) => void;
   setIsSearching: (status: boolean) => void;
   setHeroShotUrl: (url: string) => void;
   incrementTabSwitchCount: () => void;

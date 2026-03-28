@@ -6,6 +6,7 @@ import { useSessionStore } from "@/lib/state";
 import {
   featuredNonProfits,
   sortDirectoryNonProfits,
+  type NonProfitProfile,
   type DirectorySortKey,
 } from "@/lib/nonprofits";
 
@@ -42,9 +43,9 @@ export default function HomePage() {
     { value: "name", label: "Name" },
   ];
 
-  const handleSelectOrganization = (id: string, name: string, city: string, address: string) => {
-    setSelectedCharity({ id, name, city, address });
-    router.push("/onboarding");
+  const handleSelectOrganization = (organization: NonProfitProfile) => {
+    setSelectedCharity(organization);
+    router.push(`/nonprofits/${organization.id}`);
   };
 
   const renderStars = (rating: number) => {
@@ -240,14 +241,7 @@ export default function HomePage() {
                     <div className="pt-1">
                       <button
                         type="button"
-                        onClick={() =>
-                          handleSelectOrganization(
-                            organization.id,
-                            organization.name,
-                            organization.city,
-                            organization.address,
-                          )
-                        }
+                        onClick={() => handleSelectOrganization(organization)}
                         className="rounded-2xl bg-[#ff9c1a] px-6 py-4 text-sm font-bold text-slate-950 transition hover:bg-[#ffac3b]"
                       >
                         View Mission Brief
