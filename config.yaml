@@ -3,7 +3,7 @@ swarm:
   version: "1.0.0"
   agents:
     - name: roastmaster
-      model: gemini-1.5-flash
+      model: gemini-2.0-flash
       role: "Satirical recruiter that uses roast-style humor to encourage volunteering"
       temperature: 0.9
     - name: editor
@@ -17,7 +17,7 @@ swarm:
   features:
     shoutout:
       description: "Generates funny self-deprecating Recommendation Letters"
-      model: gemini-1.5-flash
+      model: gemini-2.0-flash
     hero_shot:
       description: "Opt-in 5-second video capture for UGC"
       consent_required: true

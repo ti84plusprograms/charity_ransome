@@ -1,5 +1,17 @@
 import { create } from "zustand";
 
+export interface NonProfit {
+  id: string;
+  name: string;
+  address: string;
+  city: string;
+  rating?: number;
+  phoneNumber?: string;
+  website?: string;
+  description?: string;
+  urgencyScore?: number;
+}
+
 export interface SessionState {
   ironyScore: number;
   userName: string;
@@ -8,14 +20,12 @@ export interface SessionState {
   emergencyContactRelation: string;
   profileVideoUrl: string | null;
   onboardingComplete: boolean;
-  selectedCharity: {
-    id: string;
-    name: string;
-    city: string;
-  } | null;
+  selectedCharity: NonProfit | null;
+  discoveredCharities: NonProfit[];
+  isSearching: boolean;
   heroShotUrl: string | null;
   tabSwitchCount: number;
-  
+
   // Actions
   incrementIronyScore: (amount?: number) => void;
   setUserName: (name: string) => void;
@@ -27,7 +37,9 @@ export interface SessionState {
     profileVideoUrl: string;
   }) => void;
   setOnboardingComplete: (complete: boolean) => void;
-  setSelectedCharity: (charity: SessionState["selectedCharity"]) => void;
+  setSelectedCharity: (charity: NonProfit | null) => void;
+  setDiscoveredCharities: (charities: NonProfit[]) => void;
+  setIsSearching: (status: boolean) => void;
   setHeroShotUrl: (url: string) => void;
   incrementTabSwitchCount: () => void;
 }
@@ -41,9 +53,11 @@ export const useSessionStore = create<SessionState>((set) => ({
   profileVideoUrl: null,
   onboardingComplete: false,
   selectedCharity: null,
+  discoveredCharities: [],
+  isSearching: false,
   heroShotUrl: null,
   tabSwitchCount: 0,
-  
+
   incrementIronyScore: (amount = 10) =>
     set((state) => ({ ironyScore: Math.min(100, state.ironyScore + amount) })),
   setUserName: (name) => set({ userName: name }),
@@ -58,6 +72,8 @@ export const useSessionStore = create<SessionState>((set) => ({
     }),
   setOnboardingComplete: (complete) => set({ onboardingComplete: complete }),
   setSelectedCharity: (charity) => set({ selectedCharity: charity }),
+  setDiscoveredCharities: (charities) => set({ discoveredCharities: charities }),
+  setIsSearching: (status) => set({ isSearching: status }),
   setHeroShotUrl: (url) => set({ heroShotUrl: url }),
   incrementTabSwitchCount: () =>
     set((state) => ({

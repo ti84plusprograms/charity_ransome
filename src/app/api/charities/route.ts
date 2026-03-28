@@ -15,6 +15,7 @@ interface PlacesResponse {
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const city = searchParams.get("city");
+  const sortBy = searchParams.get("sortBy") || "rating"; // Default sort by rating
 
   if (!city) {
     return NextResponse.json({ error: "City parameter required" }, { status: 400 });
@@ -23,7 +24,8 @@ export async function GET(request: NextRequest) {
   const apiKey = process.env.GOOGLE_PLACES_API_KEY;
 
   if (!apiKey) {
-    return NextResponse.json(getMockNonProfits(city));
+    let mockData = getMockNonProfits(city);
+    return NextResponse.json(sortResults(mockData, sortBy));
   }
 
   try {
@@ -37,19 +39,31 @@ export async function GET(request: NextRequest) {
       throw new Error(`Places API error: ${data.status}`);
     }
 
-    const results = (data.results || []).slice(0, 8).map((place: PlaceResult) => ({
+    let results = (data.results || []).map((place: PlaceResult) => ({
       id: place.place_id,
       name: place.name,
       address: place.formatted_address,
       city,
-      rating: place.rating,
+      rating: place.rating || 0,
+      urgencyScore: Math.floor(Math.random() * 10) + 1, // Simulated mission urgency
     }));
 
-    return NextResponse.json(results);
+    return NextResponse.json(sortResults(results, sortBy));
   } catch (error) {
     console.error("Google Places API error:", error);
-    return NextResponse.json(getMockNonProfits(city));
+    return NextResponse.json(sortResults(getMockNonProfits(city), sortBy));
   }
+}
+
+function sortResults(results: any[], sortBy: string) {
+  if (sortBy === "rating") {
+    return results.sort((a, b) => b.rating - a.rating);
+  } else if (sortBy === "urgency") {
+    return results.sort((a, b) => b.urgencyScore - a.urgencyScore);
+  } else if (sortBy === "name") {
+    return results.sort((a, b) => a.name.localeCompare(b.name));
+  }
+  return results;
 }
 
 function getMockNonProfits(city: string) {
@@ -60,6 +74,7 @@ function getMockNonProfits(city: string) {
       address: `123 Charity Lane, ${city}`,
       city,
       rating: 4.8,
+      urgencyScore: 9,
     },
     {
       id: "mock-2",
@@ -67,6 +82,7 @@ function getMockNonProfits(city: string) {
       address: `456 Giving St, ${city}`,
       city,
       rating: 4.9,
+      urgencyScore: 7,
     },
     {
       id: "mock-3",
@@ -74,6 +90,7 @@ function getMockNonProfits(city: string) {
       address: `789 Green Ave, ${city}`,
       city,
       rating: 4.7,
+      urgencyScore: 4,
     },
     {
       id: "mock-4",
@@ -81,6 +98,7 @@ function getMockNonProfits(city: string) {
       address: `321 Hope Blvd, ${city}`,
       city,
       rating: 4.6,
+      urgencyScore: 6,
     },
   ];
 }

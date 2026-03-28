@@ -7,10 +7,11 @@ export interface NonProfit {
   phoneNumber?: string;
   website?: string;
   description?: string;
+  urgencyScore?: number;
 }
 
-export async function fetchLocalNonProfits(city: string): Promise<NonProfit[]> {
-  const response = await fetch(`/api/charities?city=${encodeURIComponent(city)}`);
+export async function fetchLocalNonProfits(city: string, sortBy: string = "rating"): Promise<NonProfit[]> {
+  const response = await fetch(`/api/charities?city=${encodeURIComponent(city)}&sortBy=${sortBy}`);
   
   if (!response.ok) {
     throw new Error(`Failed to fetch non-profits: ${response.statusText}`);
