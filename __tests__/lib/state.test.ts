@@ -94,7 +94,8 @@ describe("useSessionStore", () => {
 
     it("accepts null to deselect", () => {
       act(() => {
-        useSessionStore.getState().setSelectedCharity({ id: "c-1", name: "x", city: "y" } as any);
+        // @ts-expect-error partial mock for testing
+        useSessionStore.getState().setSelectedCharity({ id: "c-1", name: "x", city: "y" });
         useSessionStore.getState().setSelectedCharity(null);
       });
       expect(useSessionStore.getState().selectedCharity).toBeNull();

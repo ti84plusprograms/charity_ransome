@@ -79,7 +79,7 @@ export function useEngagement(options: UseEngagementOptions = {}) {
         }
       });
     }
-  }, [store, fetchAiShame]);
+  }, [store, incrementTabSwitchCount, fetchAiShame]);
 
   useEffect(() => {
     document.addEventListener("visibilitychange", handleVisibilityChange);

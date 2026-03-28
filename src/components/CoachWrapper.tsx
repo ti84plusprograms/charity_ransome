@@ -17,7 +17,7 @@ export function CoachWrapper({ children }: { children: React.ReactNode }) {
   const [notification, setNotification] = useState<CoachNotification | null>(null);
   const [isDispatching, setIsDispatching] = useState(false);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const { tabSwitchCount, emergencyContactEmail, userName, shameMemeDataUrl, selectedCharity, visitedCharityIds } = useSessionStore();
+  const { emergencyContactEmail, userName, shameMemeDataUrl, selectedCharity, visitedCharityIds } = useSessionStore();
 
   const scheduleNotificationClear = (delay: number) => {
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
@@ -136,7 +136,7 @@ export function CoachWrapper({ children }: { children: React.ReactNode }) {
                     <p className="text-base text-slate-700">The Sentry has generated the following audit report for your review:</p>
                     
                     <div className="bg-white/60 p-8 border border-slate-200 shadow-inner italic text-slate-900 font-medium quote">
-                      "{notification.message}"
+                      &quot;{notification.message}&quot;
                     </div>
 
                     {shameMemeDataUrl && (

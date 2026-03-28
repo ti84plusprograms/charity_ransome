@@ -34,6 +34,7 @@ export async function POST(req: Request) {
     });
 
     if (data?.error) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const status = typeof (data.error as any).statusCode === "number" ? (data.error as any).statusCode : 502;
       return NextResponse.json({ success: false, error: data.error.message ?? "Failed to send email" }, { status });
     }
