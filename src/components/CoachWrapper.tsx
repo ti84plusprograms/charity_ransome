@@ -15,8 +15,9 @@ interface CoachNotification {
 
 export function CoachWrapper({ children }: { children: React.ReactNode }) {
   const [notification, setNotification] = useState<CoachNotification | null>(null);
+  const [isDispatching, setIsDispatching] = useState(false);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const { tabSwitchCount, emergencyContactEmail, userName, shameMemeDataUrl } = useSessionStore();
+  const { tabSwitchCount, emergencyContactEmail, userName, shameMemeDataUrl, selectedCharity, visitedCharityIds } = useSessionStore();
 
   const scheduleNotificationClear = (delay: number) => {
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
@@ -28,6 +29,54 @@ export function CoachWrapper({ children }: { children: React.ReactNode }) {
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
     };
   }, []);
+
+  const handleAcceptFallout = async () => {
+    if (isDispatching) return;
+    setIsDispatching(true);
+
+    const contact = { 
+      name: "Emergency Contact", 
+      email: emergencyContactEmail || "test@example.com", 
+      relation: "emergency contact" 
+    };
+    
+    try {
+      const draftRes = await fetch("/api/shoutout/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: "email",
+          userName: userName || "Subject Zero",
+          charityName: selectedCharity?.name || "a local given charity",
+          contact,
+          visitedCharityNames: visitedCharityIds,
+        })
+      });
+      const { message } = await draftRes.json();
+      
+      const sendRes = await fetch("/api/shoutout/send", {
+         method: "POST",
+         headers: { "Content-Type": "application/json" },
+         body: JSON.stringify({
+           contactEmail: emergencyContactEmail || "delivered@resend.dev",
+           emailBody: message,
+           memeImage: shameMemeDataUrl
+         })
+      });
+      const result = await sendRes.json();
+      if (result.success) {
+        alert("Email dispatched. Your cowardice is now public record.");
+      } else {
+        alert("Dispatch failed... but we won't forget.");
+      }
+    } catch (e) {
+      console.error(e);
+      alert("Error sending email.");
+    } finally {
+      setIsDispatching(false);
+      setNotification(null);
+    }
+  };
 
   useEngagement({
     onTabHidden: (message, emoji, link) => {
@@ -116,10 +165,11 @@ export function CoachWrapper({ children }: { children: React.ReactNode }) {
                       </Link>
                     )}
                     <button 
-                      onClick={() => setNotification(null)}
-                      className="text-[10px] text-slate-400 uppercase tracking-widest hover:text-red-700 transition"
+                      onClick={handleAcceptFallout}
+                      disabled={isDispatching}
+                      className="text-[10px] text-slate-400 uppercase tracking-widest hover:text-red-700 transition disabled:opacity-50"
                     >
-                      I accept the social fallout of this neglect
+                      {isDispatching ? "DISPATCHING DOSSIER..." : "I accept the social fallout of this neglect"}
                     </button>
                   </div>
                </div>

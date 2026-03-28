@@ -68,6 +68,7 @@ export function useEngagement(options: UseEngagementOptions = {}) {
 
   const handleMouseOut = useCallback((e: MouseEvent) => {
     if (e.clientY <= 10 && !e.relatedTarget) {
+      incrementTabSwitchCount();
       const { selectedCharity, tabSwitchCount } = store.getState();
       const coachMsg = getCoachMessage(selectedCharity, tabSwitchCount);
       optionsRef.current.onExitIntent?.(coachMsg.message, coachMsg.link);

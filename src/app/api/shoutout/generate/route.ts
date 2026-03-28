@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { generateRoast, generateRecommendationLetter } from "@/agents/roastmaster";
+import { generateRoast, generateRecommendationLetter, generateExitEmailDraft } from "@/agents/roastmaster";
 
 export async function POST(request: NextRequest) {
   const body = await request.json();
@@ -23,6 +23,16 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ message });
     } catch {
       return NextResponse.json({ message: "Letter generation failed. The quill has run dry." }, { status: 200 });
+    }
+  }
+
+  if (type === "email") {
+    try {
+      const { contact, visitedCharityNames } = body;
+      const message = await generateExitEmailDraft(userName, charityName, contact, visitedCharityNames);
+      return NextResponse.json({ message });
+    } catch {
+      return NextResponse.json({ message: "Email generation failed." }, { status: 200 });
     }
   }
 
