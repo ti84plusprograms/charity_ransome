@@ -1,0 +1,32 @@
+@import "tailwindcss";
+
+:root {
+  --background: #07181c;
+  --foreground: #f7fbfa;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: "Avenir Next", "Trebuchet MS", "Segoe UI", sans-serif;
+}
+
+::selection {
+  background: rgba(246, 212, 112, 0.32);
+  color: #06151a;
+}

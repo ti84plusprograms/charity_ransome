@@ -1,0 +1,23 @@
+swarm:
+  name: "The Aggressive Recruiter"
+  version: "1.0.0"
+  agents:
+    - name: roastmaster
+      model: gemini-1.5-flash
+      role: "Satirical recruiter that uses roast-style humor to encourage volunteering"
+      temperature: 0.9
+    - name: editor
+      role: "Automates UGC video editing using ffmpeg.wasm"
+    - name: coach
+      role: "Detects tab-switching and delivers fourth-wall-breaking nudges"
+      trigger: visibilitychange
+    - name: scout
+      role: "Fetches real-time local non-profit data from Google Places"
+      api: google_places
+  features:
+    shoutout:
+      description: "Generates funny self-deprecating Recommendation Letters"
+      model: gemini-1.5-flash
+    hero_shot:
+      description: "Opt-in 5-second video capture for UGC"
+      consent_required: true
