@@ -11,10 +11,36 @@ import {
 
 export default function HomePage() {
   const router = useRouter();
-  const { onboardingComplete, userName, setSelectedCharity } = useSessionStore();
+  const { onboardingComplete, userName, ironyScore, setUserName, setSelectedCharity } = useSessionStore();
+  
+  // ree state
   const [sortBy, setSortBy] = useState<DirectorySortKey>("priority");
   const [searchQuery, setSearchQuery] = useState("");
   const [zipCode, setZipCode] = useState("");
+  
+  // ary state
+  const [name, setName] = useState(userName || "");
+  const [roast, setRoast] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  const handleGetRoasted = async () => {
+    if (!name.trim()) return;
+    setLoading(true);
+    setUserName(name);
+    try {
+      const res = await fetch("/api/shoutout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type: "roast", userName: name, ironyScore }),
+      });
+      const data = await res.json();
+      setRoast(data.message);
+    } catch {
+      setRoast("Our roastmaster is temporarily on vacation (probably volunteering). Try again!");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const filteredOrganizations = featuredNonProfits.filter((organization) => {
     const normalizedQuery = searchQuery.trim().toLowerCase();
@@ -144,6 +170,66 @@ export default function HomePage() {
       </header>
 
       <section className="mx-auto max-w-7xl px-6 py-10 lg:px-8">
+        {/* Compliance Assessment (Roastmaster Integration) */}
+        <div className="mb-8 rounded-[34px] border border-[#0d6f77]/15 bg-slate-900 text-white p-6 md:p-8 shadow-[0_24px_55px_rgba(17,69,79,0.15)]">
+          <div className="grid gap-8 lg:grid-cols-[1fr_350px]">
+            <div className="space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-600/20 text-xl">
+                  🎯
+                </div>
+                <h2 className="text-2xl font-black tracking-tight">Step 1: Compliance Assessment</h2>
+              </div>
+              <p className="text-teal-50/70 text-sm leading-relaxed max-w-xl">
+                The Aggressive Recruiter system is now integrated. Enter your name below so our AI can 
+                personally judge your volunteer eligibility. <span className="text-orange-400">Your excuses are not impressive.</span>
+              </p>
+              
+              <div className="flex gap-3 max-w-md">
+                <input
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handleGetRoasted()}
+                  placeholder="Your name (we'll be gentle-ish)"
+                  className="flex-1 bg-white/5 border border-white/10 rounded-2xl px-4 py-3 text-white placeholder-white/30 focus:outline-none focus:border-orange-500 transition"
+                />
+                <button
+                  onClick={handleGetRoasted}
+                  disabled={loading || !name.trim()}
+                  className="bg-orange-600 hover:bg-orange-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold px-6 py-3 rounded-2xl transition shadow-[0_8px_20px_rgba(234,88,12,0.3)]"
+                >
+                  {loading ? "Roasting..." : "Roast Me"}
+                </button>
+              </div>
+
+              {roast && (
+                <div className="bg-orange-950/40 border border-orange-800/50 rounded-2xl p-4 text-orange-100 text-sm leading-relaxed animate-in fade-in slide-in-from-top-4">
+                  <p className="text-orange-400 font-bold mb-1">🎤 The Roastmaster says:</p>
+                  <p className="italic">"{roast}"</p>
+                </div>
+              )}
+            </div>
+
+            {/* Irony Score Panel */}
+            <div className="rounded-2xl bg-white/5 border border-white/10 p-5 flex flex-col justify-center">
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-xs font-bold uppercase tracking-[0.2em] text-teal-100/50">Your Irony Score™</p>
+                <span className="text-orange-400 font-black text-xl">{ironyScore}/100</span>
+              </div>
+              <div className="bg-white/10 rounded-full h-3 overflow-hidden">
+                <div
+                  className="bg-gradient-to-r from-orange-500 to-red-600 h-full transition-all duration-1000 ease-out"
+                  style={{ width: `${ironyScore}%` }}
+                />
+              </div>
+              <p className="mt-3 text-[10px] uppercase tracking-[0.1em] text-teal-100/40 text-center">
+                Score increases based on abandonment and excuses
+              </p>
+            </div>
+          </div>
+        </div>
+
         {onboardingComplete && (
           <div className="mb-8 rounded-[28px] border border-[#0d6f77]/10 bg-white/90 p-5 shadow-[0_18px_45px_rgba(17,69,79,0.08)]">
             <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
@@ -209,8 +295,8 @@ export default function HomePage() {
                   Atlanta Nonprofits and Charities
                 </h2>
                 <p className="mt-3 max-w-3xl text-base leading-7 text-slate-600">
-                  The portal is now framed as a volunteer intake directory. Extra sidebar promos are
-                  removed, the list is cleaner, and the onboarding entry point is always one click away.
+                  The portal is now framed as a volunteer intake directory. High-priority missions are
+                  ranked by compliance urgency.
                 </p>
               </div>
               <div className="rounded-2xl bg-white/80 px-4 py-3 text-sm text-slate-600 shadow-[0_12px_30px_rgba(17,69,79,0.08)]">
@@ -334,7 +420,7 @@ export default function HomePage() {
                           }
                           className="rounded-2xl bg-[#f6d470] px-6 py-4 text-sm font-bold text-[#11454f] transition hover:bg-[#ffe08e]"
                         >
-                          Login / Start Onboarding
+                          Join Mission
                         </button>
                       </div>
                     </div>
