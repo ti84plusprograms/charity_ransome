@@ -43,10 +43,10 @@
 | Feature | Description |
 |---|---|
 | **Roastmaster** | Enter your name; Google Gemini AI generates a personalized, comedic call-to-action urging you to volunteer |
-| **Find Charities (Scout)** | Searches for local non-profits near a city using the Google Places API; falls back to mock data if no key is configured |
-| **Hero Shot (Booth)** | Opt-in 5-second webcam capture so you can record a personal "I volunteered!" video clip, processed in-browser via ffmpeg.wasm |
-| **Shout-Out / Recommendation Letter** | Generates a hilariously self-deprecating recommendation letter you can "send" to a friend to recruit them |
-| **Coach (Tab-Switch Detection)** | Catches you switching tabs and delivers a fourth-wall-breaking nudge to come back and volunteer |
+| **Find Charities (Scout)** | Searches for local non-profits near a city using the Google Places API |
+| **Campaign Studio** | Generates 30-second volunteer recruitment videos via a cloud polling jobs architecture |
+| **Shout-Out / Recommendation Letter** | Generates a hilariously self-deprecating "Shame Dossier" |
+| **Coach (Sentry Tracking)** | Catches you switching tabs and triggers a 3-strike escalation matrix that dispatches an email to your emergency contact over the Resend API |
 
 ### Tech Stack
 
@@ -67,11 +67,12 @@
 
 **Status: Early prototype / proof-of-concept.**
 
-The codebase is functional but not production-hardened:
+The codebase is functional and actively being hardened:
 
-- Email delivery for "Shout-Out" letters is **not yet implemented** (logged to console only)
-- No authentication or rate limiting on API routes
-- No persistent storage — all session state is in-memory (Zustand, resets on page reload)
+- **Email delivery for "Shout-Out" letters is fully implemented** via the Resend API. Entering a valid emergency contact will trigger a live email upon reaching 3 tab-switch strikes!
+- AI prompt logic uses `@google/generative-ai` securely via server-side API routes.
+- Video generation utilizes a cloud job polling architecture replacing the legacy local `ffmpeg.wasm` renderer.
+- No persistent storage — all session state is in-memory (Zustand) except video job statuses.
 - The `config.yaml` documents a planned multi-agent "swarm" architecture; not all agents are fully wired up
 
 ---
@@ -81,21 +82,23 @@ The codebase is functional but not production-hardened:
 ```
 Browser (React + Next.js)
 │
-├── src/app/page.tsx          ← Home: name input + Roastmaster
-├── src/app/campaign/page.tsx ← Browse charities, generate Shout-Out letter
-├── src/app/booth/page.tsx    ← Opt-in Hero Shot video capture (ffmpeg.wasm)
+├── src/app/page.tsx               ← Home: name input + Volunteer Compliance Portal
+├── src/app/nonprofits/[id]/       ← Dynamic local non-profit briefing pages
+├── src/app/nonprofits/[id]/campaign 
+│   └── CampaignStudioClient.tsx   ← Video API jobs polling & Shame-Meme generation
 │
 ├── Next.js API Routes (server-side)
-│   ├── /api/shoutout         ← Calls Gemini AI (roasts + recommendation letters)
-│   └── /api/charities        ← Calls Google Places API (or returns mock data)
+│   ├── /api/shoutout/generate     ← Calls Gemini AI for text generation (roasts, emails)
+│   ├── /api/shoutout/send         ← Dispatches generated emails via Resend API
+│   ├── /api/video/...             ← Video generation APIs
+│   └── /api/charities             ← Calls Google Places API
 │
 ├── agents/
-│   ├── roastmaster.ts        ← Gemini AI prompt logic
-│   ├── coach.ts              ← Static tab-switch messages
-│   ├── editor.ts             ← ffmpeg.wasm video processing
-│   └── scout.ts              ← Non-profit data fetch helper
+│   ├── roastmaster.ts             ← Gemini AI Prompt Engineering for roasts/dossiers
+│   ├── coach.ts                   # Static/Gemini hybrid Sentry logic
+│   └── editor.ts                  # Canvas API "Shame Meme" generator
 │
-└── src/lib/state.ts          ← Zustand session store (ironyScore, userName, etc.)
+└── src/lib/state.ts               ← Zustand session store (tabSwitchCount, userName)
 ```
 
 The `next.config.js` sets `Cross-Origin-Embedder-Policy: require-corp` and `Cross-Origin-Opener-Policy: same-origin` headers on every route — required by the browser to enable `SharedArrayBuffer`, which ffmpeg.wasm needs for multi-threaded video encoding.
@@ -156,6 +159,7 @@ Open `.env.local` in your editor:
 # .env.local
 GEMINI_API_KEY=your_gemini_api_key_here
 GOOGLE_PLACES_API_KEY=your_google_places_api_key_here
+RESEND_API_KEY=your_resend_api_key_here
 NEXT_PUBLIC_APP_URL=http://localhost:3000
 ```
 
@@ -203,9 +207,10 @@ Navigate to **[http://localhost:3000](http://localhost:3000)** in your browser.
 
 | Variable | Required | Description |
 |---|---|---|
-| `GEMINI_API_KEY` | No | Google Gemini API key. Used server-side in `/api/shoutout` route to generate roasts and recommendation letters. Without it, the route returns a hardcoded fallback message. |
-| `GOOGLE_PLACES_API_KEY` | No | Google Places Text Search API key. Used server-side in `/api/charities` route to find local non-profits. Without it, the route returns mock charity data for the given city. |
-| `NEXT_PUBLIC_APP_URL` | No | Base URL of the app. Used if you need to construct absolute URLs (e.g., `http://localhost:3000` locally, or your deployment URL in production). |
+| `GEMINI_API_KEY` | No | Google Gemini API key. Used server-side in `/api/shoutout/generate` route. |
+| `GOOGLE_PLACES_API_KEY` | No | Google Places Text Search API key. Used server-side in `/api/charities` route to find local non-profits. |
+| `RESEND_API_KEY` | No | Resend API key. Used natively in `/api/shoutout/send` to dispatch the 3-strike escalation letter. |
+| `NEXT_PUBLIC_APP_URL` | No | Base URL of the app. Used if you need to construct absolute URLs. |
 
 > **Security note:** `GEMINI_API_KEY` and `GOOGLE_PLACES_API_KEY` are server-only variables (no `NEXT_PUBLIC_` prefix). They are never sent to the browser.
 
