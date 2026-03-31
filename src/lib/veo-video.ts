@@ -11,7 +11,7 @@ import type {
   VideoProviderResponseSnapshot,
 } from "@/lib/campaign";
 
-const VEO_MODEL = process.env.GEMINI_VEO_MODEL ?? "veo-3.1-generate-preview";
+const VEO_MODEL = process.env.GEMINI_VEO_MODEL ?? "veo-3.1-fast-generate-preview";
 const VEO_BASE_URL = "https://generativelanguage.googleapis.com/v1beta";
 const VEO_POLL_INTERVAL_MS = Number(
   process.env.CAMPAIGN_VIDEO_POLL_INTERVAL_MS ?? 10_000,
@@ -886,11 +886,11 @@ function toProviderSnapshot({
     responseVideoCount: getGeneratedVideoCount(payload),
     error: payload?.error
       ? {
-          code:
-            payload.error.code === undefined ? undefined : String(payload.error.code),
-          status: payload.error.status,
-          message: payload.error.message,
-        }
+        code:
+          payload.error.code === undefined ? undefined : String(payload.error.code),
+        status: payload.error.status,
+        message: payload.error.message,
+      }
       : undefined,
   };
 }

@@ -34,14 +34,16 @@ export async function POST(req: Request) {
     });
 
     if (data?.error) {
+      console.error("[RESEND] API Error:", JSON.stringify(data.error, null, 2));
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const status = typeof (data.error as any).statusCode === "number" ? (data.error as any).statusCode : 502;
       return NextResponse.json({ success: false, error: data.error.message ?? "Failed to send email" }, { status });
     }
 
+    console.info(`[RESEND] Email successfully dispatched to ${contactEmail}. ID: ${data?.data?.id}`);
     return NextResponse.json({ success: true, data });
   } catch (error) {
-    console.error("Failed to send shame payload:", error);
+    console.error("[RESEND] Fatal routing error:", error);
     return NextResponse.json({ error: "Failed to send email" }, { status: 500 });
   }
 }

@@ -29,10 +29,12 @@ export async function POST(request: NextRequest) {
   if (type === "email") {
     try {
       const { contact, visitedCharityNames } = body;
+      console.info(`[API] Generating exit email draft for ${userName} at ${charityName}`);
       const message = await generateExitEmailDraft(userName, charityName, contact, visitedCharityNames);
       return NextResponse.json({ message });
-    } catch {
-      return NextResponse.json({ message: "Email generation failed." }, { status: 200 });
+    } catch (err) {
+      console.error("[API] Email generation failed:", err);
+      return NextResponse.json({ message: "Email generation failed. The Sentry is experiencing a processing deficit." }, { status: 200 });
     }
   }
 

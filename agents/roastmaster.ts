@@ -77,52 +77,60 @@ export async function generateExitEmailDraft(
   contact: AccountabilityContact,
   visitedCharityNames?: string[]
 ): Promise<string> {
+  console.info(`[SENTRY] Drafting compliance report for ${userName} regarding ${charityName}...`);
+  
   const genAI = getGenAI();
   const model = genAI.getGenerativeModel({
     model: "gemini-2.0-flash",
     systemInstruction:
-      "You are the Hostile Philanthropy Sentry system. You write terse, devastating compliance notifications. You are not funny. You are bureaucratic and merciless.",
+      "You are the Hostile Philanthropy Sentry system. You write terse, devastating compliance notifications. You are an aggressive recruiter who is deeply disappointed in the subject's lack of initiative. You are bureaucratic, clinical, and merciless.",
   });
 
   const visitedContext = visitedCharityNames?.length
-    ? `They also browsed and abandoned: ${visitedCharityNames.join(", ")}.`
+    ? `The subject also browsed and abandoned the following opportunities: ${visitedCharityNames.join(", ")}. This indicates a chronic pattern of commitment avoidance.`
     : "";
 
   const relationInstructions: Record<string, string> = {
-    boss: `Focus on ${userName}'s complete lack of initiative and community leadership. Imply this is a performance issue.`,
-    manager: `Focus on ${userName}'s complete lack of initiative and community leadership. Imply this is a performance issue.`,
-    mom: `Focus on your profound disappointment in how ${contact.name} raised ${userName}. Be specific about the moral failure.`,
-    parent: `Focus on your profound disappointment in how ${contact.name} raised ${userName}. Be specific about the moral failure.`,
-    professor: `Focus on the irony of someone educated enough to understand social responsibility but too self-involved to act on it.`,
-    friend: `Be petty. Mock their character. Reference the specific charity to make it sting.`,
-    ex: `Be petty. Tie their failure to volunteer to their documented pattern of avoiding commitment.`,
+    boss: `Focus on ${userName}'s complete lack of initiative and community leadership. Imply this reflects a professional performance deficit.`,
+    manager: `Focus on ${userName}'s lack of team spirit and leadership potential.`,
+    mom: `Focus on your profound disappointment in the moral upbringing of ${userName}. Be clinical about the character failure.`,
+    parent: `Focus on the failure of character building and moral responsibility.`,
+    professor: `Focus on the intellectual irony: ${userName} understands social theory but fails basic social practice.`,
+    friend: `Be petty. Call out their flakey nature. Reference ${charityName} as the latest victim of their apathy.`,
+    ex: `Reference their documented pattern of avoiding commitment and emotional labor.`,
   };
 
   const relationKey = contact.relation.toLowerCase();
   const relationContext =
     Object.entries(relationInstructions).find(([key]) => relationKey.includes(key))?.[1] ??
-    `Express that this behavior reflects poorly on everyone who knows ${userName}.`;
+    `Express that this recurring behavioral deficit reflects poorly on the subject's social viability.`;
 
   const prompt = `COMPLIANCE NOTIFICATION — DRAFT FOR DISPATCH
+  
+Subject: [DRAFT] COMPLIANCE REPORT: ${charityName} Abandonment by ${userName}
 
-Subject: ${userName} has failed to volunteer at ${charityName}.
+Context:
+- User: ${userName}
+- Abandoned Charity: ${charityName}
+- Recipient: ${contact.name} (${contact.relation})
+- Evidence: ${visitedContext}
 
-${visitedContext}
-
-Write a short (under 120 words), devastating email body to ${contact.name}, the ${contact.relation} of ${userName}.
+Draft a short (under 100 words), devastating email body to ${contact.name}.
 
 Instructions:
 - ${relationContext}
-- Reference ${charityName} specifically
-- Tone: bureaucratic, disappointed, final
-- End with a line implying the recipient should intervene
-- No subject line. No markdown. Raw text only.`;
+- Reference the abandonment of ${charityName} specifically.
+- Keep the tone clinical, disappointed, and final.
+- NO greeting (no "Dear..."). NO signature. NO markdown.
+- End with a prompt for the recipient to intervene in the subject's moral decay.`;
 
   try {
     const result = await model.generateContent(prompt);
-    return result.response.text().trim();
+    const text = result.response.text().trim();
+    console.info("[SENTRY] Compliance report drafted successfully.");
+    return text;
   } catch (error) {
-    console.error("Roastmaster failed to draft email:", error);
-    return `Dear ${contact.name},\n\nWe regret to inform you that ${userName} has abandoned ${charityName}. This is the ${contact.relation}'s problem now.\n\nRegards,\nThe Sentry`;
+    console.error("[SENTRY] Roastmaster failed to draft email:", error);
+    return `This is a formal notification that ${userName} has once again failed to fulfill a volunteer commitment, this time at ${charityName}. As their ${contact.relation}, you are being alerted to this failure of character. Immediate intervention is advised.`;
   }
 }
